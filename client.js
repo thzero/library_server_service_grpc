@@ -47,12 +47,12 @@ class BaseClientGrpcService extends Service {
 				if (!service)
 					return this._successResponse(service, correlationId);
 
-				this._enforceNotNull('AxiosRestCommunicationService', '_determineUrl', config.discoveryName, 'discoveryName', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', config.discoveryName, 'discoveryName', correlationId);
 
 				const result = this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
-				this._enforceNotNull('AxiosRestCommunicationService', '_determineUrl', result, 'result', correlationId);
-				this._enforceNotNull('AxiosRestCommunicationService', '_determineUrl', result.Address, 'result.Address', correlationId);
-				this._enforceNotNull('AxiosRestCommunicationService', '_determineUrl', result.Meta, 'result.Meta', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result, 'result', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result.Address, 'result.Address', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result.Meta, 'result.Meta', correlationId);
 
 				baseUrl = `http${result.Meta.secure ? 's' : ''}s://${result.Address}${result.Port ? `:${result.Port}` : ''}` + cofnig.discoveryRoot;
 				this._baseUrls.set(name, baseUrl);

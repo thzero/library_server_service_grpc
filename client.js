@@ -1,6 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
 import { Mutex as asyncMutex } from 'async-mutex';
 
+import LibraryConstants from '@thzero/library_server/constants';
+
 import Service from '@thzero/library_server/service/index';
 
 class BaseClientGrpcService extends Service {
@@ -9,7 +11,15 @@ class BaseClientGrpcService extends Service {
 
 		this._mutex = new asyncMutex();
 
+		this._serviceDiscoveryResources = null;
+
 		this._baseUrls = new Map();
+	}
+
+	async init(injector) {
+		await super.init(injector);
+
+		this._serviceDiscoveryResources = this._injector.getService(LibraryConstants.InjectorKeys.SERVICE_DISCOVERY_RESOURCES);
 	}
 
 	async _execute(correlationId, func, client, request) {
@@ -28,37 +38,41 @@ class BaseClientGrpcService extends Service {
 	}
 
 	async _host(correlationId, key) {
-		this._enforceNotNull('BaseClientGrpcService', '_host', key, 'key', correlationId);
-		this._enforceNotNull('BaseClientGrpcService', '_host', key, 'key', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_host', key, 'key', correlationId);
 
 		const config = this._config.getBackend(key);
 		this._enforceNotNull('BaseClientGrpcService', '_host', config, 'config', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.baseUrl, 'config.baseUrl', correlationId);
 
 		let baseUrl = config.baseUrl;
 
-		if (config.discoverable) {
-			baseUrl = this._baseUrls.get(name);
-			if (!baseUrl)
+		if (this._serviceDiscoveryResources && config.discoverable) {
+			baseUrl = this._baseUrls.get(key);
+			if (baseUrl)
 				return baseUrl;
 
-			const release = await this._mutex.acquire();
+			// const release = await this._mutex.acquire();
 			try {
-				let service = this._baseUrls.get(name);
-				if (!service)
-					return this._successResponse(service, correlationId);
+				baseUrl = this._baseUrls.get(key);
+				if (baseUrl)
+					return baseUrl;
 
-				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', config.discoveryName, 'discoveryName', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', config.discoveryName, 'discoveryName', correlationId);
 
-				const result = this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
-				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result, 'result', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result.Address, 'result.Address', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_determineUrl', result.Meta, 'result.Meta', correlationId);
+				const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
+				if (!response.success)
+					return null;
 
-				baseUrl = `http${result.Meta.secure ? 's' : ''}s://${result.Address}${result.Port ? `:${result.Port}` : ''}` + cofnig.discoveryRoot;
-				this._baseUrls.set(name, baseUrl);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'result', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.Address, 'result.Address', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.Meta, 'result.Meta', correlationId);
+
+				baseUrl = `http${response.results.Meta.secure ? 's' : ''}://${response.results.Address}${response.results.Port ? `:${response.results.Port}` : ''}`;
+				baseUrl = !String.isNullOrEmpty(config.discoveryRoot) ? baseUrl + config.discoveryRoot : baseUrl;
+				this._baseUrls.set(key, baseUrl);
 			}
 			finally {
-				release();
+				// release();
 			}
 		}
 

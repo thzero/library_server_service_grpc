@@ -27,7 +27,7 @@ class BaseClientGrpcService extends Service {
 		});
 	}
 
-	_host(correlationId, key) {
+	async _host(correlationId, key) {
 		this._enforceNotNull('BaseClientGrpcService', '_host', key, 'key', correlationId);
 		this._enforceNotNull('BaseClientGrpcService', '_host', key, 'key', correlationId);
 

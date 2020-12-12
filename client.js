@@ -63,11 +63,16 @@ class BaseClientGrpcService extends Service {
 				if (!response.success)
 					return null;
 
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'result', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.Address, 'result.Address', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.Meta, 'result.Meta', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'results', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.address, 'results.address', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.port, 'results.address', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.secure, 'results.secure', correlationId);
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.local, 'results.local', correlationId);
 
-				baseUrl = `http${response.results.Meta.secure ? 's' : ''}://${response.results.Address}${response.results.Port ? `:${response.results.Port}` : ''}`;
+				if (response.results.local)
+					response.results.address = response.results.address.replace('.', '_');
+
+				baseUrl = `http${response.results.secure ? 's' : ''}://${response.results.address}${response.results.port ? `:${response.results.port}` : ''}`;
 				baseUrl = !String.isNullOrEmpty(config.discoveryRoot) ? baseUrl + config.discoveryRoot : baseUrl;
 				this._baseUrls.set(key, baseUrl);
 			}

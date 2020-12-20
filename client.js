@@ -52,7 +52,7 @@ class BaseClientGrpcService extends Service {
 		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.host, 'config.host', correlationId);
 
 		let host = {
-			url: config.baseUrl,
+			url: config.url,
 			secure: false
 		};
 

@@ -26,24 +26,29 @@ class BaseServerGrpcService extends Service {
 		}
 	}
 
-	_authenticate(correlationId, call) {
-		this._enforceNotNull('BaseServerGrpcService', '_authenticate', call, 'call', correlationId);
+	_authenticate(call) {
+		const correlationId = this._correlationId(call);
+		this._logger.debug('BaseServerGrpcService', '_authenticate', 'correlationId', correlationId, correlationId);
 
 		const meta = call.metadata.get('authorization');
 		this._logger.debug('BaseServerGrpcService', '_authenticate', 'meta', meta, correlationId);
+		const authorization = (meta && (meta.length > 0)) ? meta[0] : null;
+		this._logger.debug('BaseServerGrpcService', '_authenticate', 'authorization', authorization, correlationId);
 
 		const valid = true; // TODO
 		if (!valid)
 			throw Error('Unauthorized.');
+
+		return correlationId;
 	}
 
-	// _correlationId(call) {
-	// 	this._enforceNotNull('BaseServerGrpcService', '_correlationId', call, 'call');
+	_correlationId(call) {
+		this._enforceNotNull('BaseServerGrpcService', '_correlationId', call, 'call');
 
-	// 	const meta = call.metadata.get('correlationId');
-	// 	this._logger.debug('BaseServerGrpcService', '_correlationId', 'meta', meta);
-	// 	return (meta && (meta.length > 0)) ? meta[0] : null;
-	// }
+		const meta = call.metadata.get('correlationId');
+		this._logger.debug('BaseServerGrpcService', '_correlationId', 'meta', meta);
+		return (meta && (meta.length > 0)) ? meta[0] : null;
+	}
 
 	async _initServices(grpc) {
 	}

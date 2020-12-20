@@ -13,7 +13,7 @@ class BaseClientGrpcService extends Service {
 
 		this._serviceDiscoveryResources = null;
 
-		this._baseUrls = new Map();
+		this._hosts = new Map();
 	}
 
 	async init(injector) {
@@ -40,63 +40,68 @@ class BaseClientGrpcService extends Service {
 		});
 	}
 
+	_credentials(correlationId, host) {
+		return grpc.credentials.createInsecure();
+	}
+
 	async _host(correlationId, key) {
 		this._enforceNotEmpty('BaseClientGrpcService', '_host', key, 'key', correlationId);
 
 		const config = this._config.getBackend(key);
 		this._enforceNotNull('BaseClientGrpcService', '_host', config, 'config', correlationId);
-		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.baseUrl, 'config.baseUrl', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.host, 'config.host', correlationId);
 
-		let baseUrl = config.baseUrl;
+		let host = {
+			url: config.baseUrl,
+			secure: false
+		};
 
-		if (this._serviceDiscoveryResources && config.discoverable) {
-			baseUrl = this._baseUrls.get(key);
-			if (baseUrl)
-				return baseUrl;
+		if (!(this._serviceDiscoveryResources && config.discoverable))
+			return this.host;
 
-			// const release = await this._mutex.acquire();
-			try {
-				baseUrl = this._baseUrls.get(key);
-				if (baseUrl)
-					return baseUrl;
+		host = this._hosts.get(key);
+		if (host)
+			return host;
 
-				this._enforceNotNull('BaseClientGrpcService', '_host', config.discoveryName, 'discoveryName', correlationId);
+		// const release = await this._mutex.acquire();
+		try {
+			host = this._hosts.get(key);
+			if (host)
+				return host;
 
-				const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
-				if (!response.success)
-					return null;
+			this._enforceNotNull('BaseClientGrpcService', '_host', config.discoveryName, 'discoveryName', correlationId);
 
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'results', correlationId);
+			const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
+			if (!response.success)
+				return null;
 
-				response.results.port ? response.results.port : 80;
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.port, 'results.port', correlationId);
+			this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'results', correlationId);
+			this._enforceNotNull('BaseClientGrpcService', '_host', response.results.grpc, 'results.grpc', correlationId);
 
-				if (response.results.dns) {
-					const temp = [];
-					temp.push(response.results.dns.label);
-					if (!String.isNullOrEmpty(response.results.dns.namespace))
-						temp.push(response.results.dns.namespace);
-					if (response.results.dns.local)
-						temp.push('local');
-					response.results.address = temp.join('.');
-				}
+			let port = response.results.grpc.port ? response.results.grpc.port : null;
+			host.secure = response.results.grpc.secure ? response.results.grpc.secure : false;
 
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.address, 'results.address', correlationId);
-
-				baseUrl = `http${response.results.secure ? 's' : ''}://${response.results.address}${response.results.port ? `:${response.results.port}` : ''}`;
-				baseUrl = !String.isNullOrEmpty(config.discoveryRoot) ? baseUrl + config.discoveryRoot : baseUrl;
-				this._baseUrls.set(key, baseUrl);
+			let url = response.results.address;
+			if (response.results.dns) {
+				const temp = [];
+				temp.push(response.results.dns.label);
+				if (!String.isNullOrEmpty(response.results.dns.namespace))
+					temp.push(response.results.dns.namespace);
+				if (response.results.dns.local)
+					temp.push('local');
+					url = temp.join('.');
 			}
-			finally {
-				// release();
-			}
+
+			this._enforceNotNull('BaseClientGrpcService', '_host', url, 'url', correlationId);
+
+			host.url = `${url}${port ? `:${port}` : ''}`;
+			this._hosts.set(key, host);
+		}
+		finally {
+			// release();
 		}
 
-		return baseUrl;
-	}
-
-	get _credentials() {
-		return grpc.credentials.createInsecure();
+		return host;
 	}
 }
 

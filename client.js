@@ -25,8 +25,11 @@ class BaseClientGrpcService extends Service {
 	async _execute(correlationId, func, client, request) {
 		this._enforceNotNull('BaseClientGrpcService', '_execute', func, 'func', correlationId);
 
+		const meta = new grpc.Metadata();
+		meta.add('correlationId', correlationId);
+
 		return await new Promise((resolve, reject) => {
-			func.call(client, request, function(err, response) {
+			func.call(client, request, meta, function(err, response) {
 				if (err) {
 					reject(err);
 					return;

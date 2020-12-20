@@ -52,26 +52,33 @@ class BaseClientGrpcService extends Service {
 		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.host, 'config.host', correlationId);
 
 		let host = {
-			url: config.baseUrl,
+			url: config.url,
 			secure: false
 		};
 
+		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable', config.discoverable, correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))
+			return this.host;
+
+		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable.enabled', config.discoverable.enabled, correlationId);
+		const enabled = config.discoverable.enabled === false ? false : true;
+		this._logger.debug('BaseServerGrpcService', '_host', 'enabled', enabled, correlationId);
+		if (!enabled)
 			return this.host;
 
 		host = this._hosts.get(key);
 		if (host)
 			return host;
 
-		// const release = await this._mutex.acquire();
+		const release = await this._mutex.acquire();
 		try {
 			host = this._hosts.get(key);
 			if (host)
 				return host;
 
-			this._enforceNotNull('BaseClientGrpcService', '_host', config.discoveryName, 'discoveryName', correlationId);
+			this._enforceNotNull('BaseClientGrpcService', '_host', config.discoverable.name, 'discoveryName', correlationId);
 
-			const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoveryName);
+			const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoverable.name);
 			if (!response.success)
 				return null;
 
@@ -81,7 +88,7 @@ class BaseClientGrpcService extends Service {
 			let port = response.results.grpc.port ? response.results.grpc.port : null;
 			host.secure = response.results.grpc.secure ? response.results.grpc.secure : false;
 
-			let url = response.results.address;
+			let address = response.results.address;
 			if (response.results.dns) {
 				const temp = [];
 				temp.push(response.results.dns.label);
@@ -89,16 +96,16 @@ class BaseClientGrpcService extends Service {
 					temp.push(response.results.dns.namespace);
 				if (response.results.dns.local)
 					temp.push('local');
-					url = temp.join('.');
+				address = temp.join('.');
 			}
 
-			this._enforceNotNull('BaseClientGrpcService', '_host', url, 'url', correlationId);
+			this._enforceNotNull('BaseClientGrpcService', '_host', address, 'address', correlationId);
 
-			host.url = `${url}${port ? `:${port}` : ''}`;
+			host.url = `${address}${port ? `:${port}` : ''}`;
 			this._hosts.set(key, host);
 		}
 		finally {
-			// release();
+			release();
 		}
 
 		return host;

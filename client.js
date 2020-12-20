@@ -63,7 +63,7 @@ class BaseClientGrpcService extends Service {
 		if (host)
 			return host;
 
-		// const release = await this._mutex.acquire();
+		const release = await this._mutex.acquire();
 		try {
 			host = this._hosts.get(key);
 			if (host)
@@ -98,7 +98,7 @@ class BaseClientGrpcService extends Service {
 			this._hosts.set(key, host);
 		}
 		finally {
-			// release();
+			release();
 		}
 
 		return host;

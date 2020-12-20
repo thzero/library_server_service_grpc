@@ -67,8 +67,9 @@ class BaseClientGrpcService extends Service {
 					return null;
 
 				this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'results', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.address, 'results.address', correlationId);
-				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.port, 'results.address', correlationId);
+
+				response.results.port ? response.results.port : 80;
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.port, 'results.port', correlationId);
 
 				if (response.results.dns) {
 					const temp = [];
@@ -79,6 +80,8 @@ class BaseClientGrpcService extends Service {
 						temp.push('local');
 					response.results.address = temp.join('.');
 				}
+
+				this._enforceNotNull('BaseClientGrpcService', '_host', response.results.address, 'results.address', correlationId);
 
 				baseUrl = `http${response.results.secure ? 's' : ''}://${response.results.address}${response.results.port ? `:${response.results.port}` : ''}`;
 				baseUrl = !String.isNullOrEmpty(config.discoveryRoot) ? baseUrl + config.discoveryRoot : baseUrl;

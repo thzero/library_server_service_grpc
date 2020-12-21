@@ -44,17 +44,35 @@ class BaseClientGrpcService extends Service {
 		return grpc.credentials.createInsecure();
 	}
 
-	async _host(correlationId, key) {
+	async _host(correlationId, key, opts) {
 		this._enforceNotEmpty('BaseClientGrpcService', '_host', key, 'key', correlationId);
 
-		const config = this._config.getBackend(key);
-		this._enforceNotNull('BaseClientGrpcService', '_host', config, 'config', correlationId);
-		this._enforceNotEmpty('BaseClientGrpcService', '_host', config.host, 'config.host', correlationId);
-
 		let host = {
-			url: config.url,
+			url: null,
 			secure: false
 		};
+
+		if (opts.resource)
+			host = this._hostFromResource(correlationId, host, opts.resource, opts);
+		else if (!String.url(opts.url)) {
+			host.url = opts.url;
+			host.secure = opts.secure;
+		}
+		else
+			host = this._hostFromConfig(correlationId, key, opts);
+
+		return host;
+	}
+
+	async _hostFromConfig(correlationId, host, key, opts) {
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', host, 'host', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', key, 'key', correlationId);
+
+		const config = this._config.getBackend(key);
+		this._enforceNotNull('BaseClientGrpcService', '_hostFromConfig', config, 'config', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.host, 'config.host', correlationId);
+
+		host.url = config.url;
 
 		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable', config.discoverable, correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))
@@ -82,31 +100,39 @@ class BaseClientGrpcService extends Service {
 			if (!response.success)
 				return null;
 
-			this._enforceNotNull('BaseClientGrpcService', '_host', response.results, 'results', correlationId);
-			this._enforceNotNull('BaseClientGrpcService', '_host', response.results.grpc, 'results.grpc', correlationId);
+			host = await this._hostFromResource(correlationId, host, response.results);
 
-			let port = response.results.grpc.port ? response.results.grpc.port : null;
-			host.secure = response.results.grpc.secure ? response.results.grpc.secure : false;
-
-			let address = response.results.address;
-			if (response.results.dns) {
-				const temp = [];
-				temp.push(response.results.dns.label);
-				if (!String.isNullOrEmpty(response.results.dns.namespace))
-					temp.push(response.results.dns.namespace);
-				if (response.results.dns.local)
-					temp.push('local');
-				address = temp.join('.');
-			}
-
-			this._enforceNotNull('BaseClientGrpcService', '_host', address, 'address', correlationId);
-
-			host.url = `${address}${port ? `:${port}` : ''}`;
 			this._hosts.set(key, host);
 		}
 		finally {
 			release();
 		}
+
+		return host;
+	}
+
+	async _hostFromResource(correlationId, host, resource, opts) {
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromResource', host, 'host', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromResource', resource, 'resource', correlationId);
+		this._enforceNotNull('BaseClientGrpcService', '_hostFromResource', resource.grpc, 'resource.grpc', correlationId);
+
+		let port = resource.grpc.port ? resource.grpc.port : null;
+		host.secure = resource.grpc.secure ? resource.grpc.secure : false;
+
+		let address = resource.address;
+		if (resource.dns) {
+			const temp = [];
+			temp.push(resource.dns.label);
+			if (!String.isNullOrEmpty(resource.dns.namespace))
+				temp.push(resource.dns.namespace);
+			if (resource.dns.local)
+				temp.push('local');
+			address = temp.join('.');
+		}
+
+		this._enforceNotNull('BaseClientGrpcService', '_hostFromResource', address, 'address', correlationId);
+
+		host.url = `${address}${port ? `:${port}` : ''}`;
 
 		return host;
 	}

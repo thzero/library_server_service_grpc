@@ -24,8 +24,8 @@
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.2.2",
-    "@thzero/library_common": "^0.12.0",
-    "@thzero/library_server": "^0.12.11"
+    "@thzero/library_common": "^0.12.4",
+    "@thzero/library_server": "^0.12.15"
   },
   "devDependencies": {
     "@thzero/library_cli": "^0.12.0"

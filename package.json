@@ -1,9 +1,9 @@
 {
   "name": "@thzero/library_server_service_grpc",
-  "version": "0.13.7",
+  "version": "0.13.8",
   "version_major": 0,
   "version_minor": 13,
-  "version_patch": 7,
+  "version_patch": 8,
   "version_date": "01/28/2021",
   "description": "",
   "author": "thZero",
@@ -23,7 +23,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.2.4"
+    "@grpc/grpc-js": "^1.2.5"
   },
   "devDependencies": {
     "@thzero/library_cli": "^0.13"

@@ -40,7 +40,7 @@ class BaseClientGrpcService extends Service {
 		});
 	}
 
-	_credentials(correlationId, host) {
+	_credentials(correlationId) {
 		return grpc.credentials.createInsecure();
 	}
 
@@ -52,14 +52,16 @@ class BaseClientGrpcService extends Service {
 			secure: false
 		};
 
-		if (opts.resource)
-			host = this._hostFromResource(correlationId, host, opts.resource, opts);
-		else if (!String.url(opts.url)) {
-			host.url = opts.url;
-			host.secure = opts.secure;
+		if (opts) {
+			if (opts.resource)
+				host = await this._hostFromResource(correlationId, host, opts.resource, opts);
+			else if (!String.url(opts.url)) {
+				host.url = opts.url;
+				host.secure = opts.secure;
+			}
 		}
 		else
-			host = this._hostFromConfig(correlationId, key, opts);
+			host = await this._hostFromConfig(correlationId, host, key, opts);
 
 		return host;
 	}
@@ -70,19 +72,19 @@ class BaseClientGrpcService extends Service {
 
 		const config = this._config.getBackend(key);
 		this._enforceNotNull('BaseClientGrpcService', '_hostFromConfig', config, 'config', correlationId);
-		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.host, 'config.host', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.url, 'config.url', correlationId);
 
 		host.url = config.url;
 
 		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable', config.discoverable, correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))
-			return this.host;
+			return host;
 
 		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable.enabled', config.discoverable.enabled, correlationId);
 		const enabled = config.discoverable.enabled === false ? false : true;
 		this._logger.debug('BaseServerGrpcService', '_host', 'enabled', enabled, correlationId);
 		if (!enabled)
-			return this.host;
+			return host;
 
 		host = this._hosts.get(key);
 		if (host)

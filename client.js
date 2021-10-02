@@ -103,7 +103,7 @@ class BaseClientGrpcService extends Service {
 			this._enforceNotNull('BaseClientGrpcService', '_host', config.discoverable.name, 'discoveryName', correlationId);
 
 			const response = await this._serviceDiscoveryResources.getService(correlationId, config.discoverable.name);
-			if (!response.success)
+			if (this._hasFailed(response))
 				return null;
 
 			host = await this._hostFromResource(correlationId, host, response.results);

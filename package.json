@@ -1,10 +1,10 @@
 {
   "name": "@thzero/library_server_service_grpc",
-  "version": "0.13.18",
+  "version": "0.13.19",
   "version_major": 0,
   "version_minor": 13,
-  "version_patch": 18,
-  "version_date": "09/26/2021",
+  "version_patch": 19,
+  "version_date": "10/02/2021",
   "description": "",
   "author": "thZero",
   "repository": {

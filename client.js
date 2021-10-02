@@ -75,8 +75,12 @@ class BaseClientGrpcService extends Service {
 		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.url, 'config.url', correlationId);
 
 		host.url = config.url;
-
+		
 		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable', config.discoverable, correlationId);
+		if (!config.discoverable)
+			return resource;
+
+		this._logger.debug('BaseServerGrpcService', '_host', '_serviceDiscoveryResources', (this._serviceDiscoveryResources != null), correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))
 			return host;
 

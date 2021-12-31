@@ -25,7 +25,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.4.4"
+    "@grpc/grpc-js": "^1.4.5"
   },
   "devDependencies": {
     "@thzero/library_cli": "^0.13.21"

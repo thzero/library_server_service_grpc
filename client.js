@@ -60,7 +60,7 @@ class BaseClientGrpcService extends Service {
 				host.secure = opts.secure;
 			}
 		}
-		else
+		else                         
 			host = await this._hostFromConfig(correlationId, host, key, opts);
 
 		return host;
@@ -72,13 +72,13 @@ class BaseClientGrpcService extends Service {
 
 		const config = this._config.getBackend(key);
 		this._enforceNotNull('BaseClientGrpcService', '_hostFromConfig', config, 'config', correlationId);
-		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.url, 'config.url', correlationId);
+		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.baseUrl, 'config.baseUrl', correlationId);
 
-		host.url = config.url;
+		host.url = config.baseUrl;
 		
 		this._logger.debug('BaseServerGrpcService', '_host', 'config.discoverable', config.discoverable, correlationId);
 		if (!config.discoverable)
-			return resource;
+			return host;
 
 		this._logger.debug('BaseServerGrpcService', '_host', '_serviceDiscoveryResources', (this._serviceDiscoveryResources != null), correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))

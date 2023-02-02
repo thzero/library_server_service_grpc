@@ -1,7 +1,7 @@
 import * as grpc from '@grpc/grpc-js';
 import { Mutex as asyncMutex } from 'async-mutex';
 
-import LibraryConstants from '@thzero/library_server/constants';
+import LibraryServerConstants from '@thzero/library_server/constants';
 
 import Service from '@thzero/library_server/service/index';
 
@@ -19,7 +19,7 @@ class BaseClientGrpcService extends Service {
 	async init(injector) {
 		await super.init(injector);
 
-		this._serviceDiscoveryResources = this._injector.getService(LibraryConstants.InjectorKeys.SERVICE_DISCOVERY_RESOURCES);
+		this._serviceDiscoveryResources = this._injector.getService(LibraryServerConstants.InjectorKeys.SERVICE_DISCOVERY_RESOURCES);
 	}
 
 	async _execute(correlationId, func, client, request) {

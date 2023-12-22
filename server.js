@@ -1,6 +1,6 @@
 import * as grpc from '@grpc/grpc-js';
 
-import Service from '@thzero/library_server/service/index';
+import Service from '@thzero/library_server/service/index.js';
 
 class BaseServerGrpcService extends Service {
 	constructor() {

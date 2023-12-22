@@ -1,9 +1,9 @@
 import * as grpc from '@grpc/grpc-js';
 import { Mutex as asyncMutex } from 'async-mutex';
 
-import LibraryServerConstants from '@thzero/library_server/constants';
+import LibraryServerConstants from '@thzero/library_server/constants.js';
 
-import Service from '@thzero/library_server/service/index';
+import Service from '@thzero/library_server/service/index.js';
 
 class BaseClientGrpcService extends Service {
 	constructor() {

@@ -50,6 +50,22 @@ class BaseServerGrpcService extends Service {
 		return (meta && (meta.length > 0)) ? meta[0] : null;
 	}
 
+	_handleError(correlationId, err, callback) {
+		this._enforceNotNull('BaseServerGrpcService', '_handleError', callback, 'callback', correlationId);
+
+		if (!err)
+			return;
+
+		let message = '';
+		if (err.name)
+			message += err.name + ' ';
+		if (err.message)
+			message += err.message;
+		message = message.trim();
+
+		callback({ message: message }, null);
+	}
+
 	async _initServices(grpc) {
 	}
 

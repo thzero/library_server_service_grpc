@@ -5,7 +5,7 @@
   "version_major": 0,
   "version_minor": 18,
   "version_patch": 1,
-  "version_date": "02/24/2024",
+  "version_date": "03/26/2024",
   "description": "",
   "author": "thZero",
   "repository": {
@@ -24,7 +24,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.10.1"
+    "@grpc/grpc-js": "^1.10.4"
   },
   "peerDependencies": {
     "@thzero/library_common": "^0.18",

@@ -1,6 +1,8 @@
 import * as grpc from '@grpc/grpc-js';
 import { Mutex as asyncMutex } from 'async-mutex';
 
+import LibraryCommonUtility from '@thzero/library_common/utility/index.js';
+
 import LibraryServerConstants from '@thzero/library_server/constants.js';
 
 import Service from '@thzero/library_server/service/index.js';
@@ -55,7 +57,7 @@ class BaseClientGrpcService extends Service {
 		if (opts) {
 			if (opts.resource)
 				host = await this._hostFromResource(correlationId, host, opts.resource, opts);
-			else if (!String.url(opts.url)) {
+			else if (!String.isNullOrEmpty(opts.url)) {
 				host.url = opts.url;
 				host.secure = opts.secure;
 			}
@@ -70,7 +72,7 @@ class BaseClientGrpcService extends Service {
 		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', host, 'host', correlationId);
 		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', key, 'key', correlationId);
 
-		const config = this._config.getBackend(key);
+		const config = this._config.getBackend(correlationId, key);
 		this._enforceNotNull('BaseClientGrpcService', '_hostFromConfig', config, 'config', correlationId);
 		this._enforceNotEmpty('BaseClientGrpcService', '_hostFromConfig', config.baseUrl, 'config.baseUrl', correlationId);
 
@@ -80,7 +82,7 @@ class BaseClientGrpcService extends Service {
 		if (!config.discoverable)
 			return host;
 
-		this._logger.debug('BaseServerGrpcService', '_host', '_serviceDiscoveryResources', (this._serviceDiscoveryResources != null), correlationId);
+		this._logger.debug('BaseServerGrpcService', '_host', '_serviceDiscoveryResources', LibraryCommonUtility.isNotNull(this._serviceDiscoveryResources), correlationId);
 		if (!(this._serviceDiscoveryResources && config.discoverable))
 			return host;
 
@@ -90,15 +92,15 @@ class BaseClientGrpcService extends Service {
 		if (!enabled)
 			return host;
 
-		host = this._hosts.get(key);
-		if (host)
-			return host;
+		let discovered = this._hosts.get(key);
+		if (discovered)
+			return discovered;
 
 		const release = await this._mutex.acquire();
 		try {
-			host = this._hosts.get(key);
-			if (host)
-				return host;
+			discovered = this._hosts.get(key);
+			if (discovered)
+				return discovered;
 
 			this._enforceNotNull('BaseClientGrpcService', '_host', config.discoverable.name, 'discoveryName', correlationId);
 

@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
 
 import '@thzero/library_common/utility/string.js';
+import LibraryMomentUtility from '@thzero/library_common/utility/moment.js';
 import BaseClientGrpcService from '../client.js';
+
+// dayjs.utc() only exists once the plugins are registered; the app does this at
+// boot, so anything calling getTimestamp() outside a booted app must do it too.
+LibraryMomentUtility.initDateTime();
 
 const inject = (target, name, value) => {
 	Object.defineProperty(target, name, { value, writable: true, configurable: true });
@@ -93,6 +98,69 @@ describe('_hostFromConfig', () => {
 		inject(service, '_config', { getBackend: () => ({ baseUrl: 'http://backend:1', discoverable: { name: 'svc' } }) });
 		service._serviceDiscoveryResources = { getService: async () => ({ success: false }) };
 		assert.equal(await service._hostFromConfig('cid', host(), 'key', null), null);
+	});
+
+	// Regression: a failure cached nothing, so every call after it took the mutex
+	// and asked discovery again, one at a time.
+	it('does not ask discovery again for a failed key within the retry window', async () => {
+		let lookups = 0;
+		inject(service, '_config', { getBackend: () => ({ baseUrl: 'http://backend:1', discoverable: { name: 'svc' } }) });
+		service._serviceDiscoveryResources = { getService: async () => { lookups++; return { success: false }; } };
+		assert.equal(await service._hostFromConfig('cid', host(), 'key', null), null);
+		assert.equal(await service._hostFromConfig('cid', host(), 'key', null), null);
+		assert.equal(await service._hostFromConfig('cid', host(), 'key', null), null);
+		assert.equal(lookups, 1);
+	});
+
+	it('asks again once the retry window has passed, and forgets the failure on success', async () => {
+		let lookups = 0;
+		let succeed = false;
+		inject(service, '_config', { getBackend: () => ({ baseUrl: 'http://backend:1', discoverable: { name: 'svc' } }) });
+		service._serviceDiscoveryResources = {
+			getService: async () => { lookups++; return succeed ? { success: true, results: { address: 'up', grpc: { port: 1 } } } : { success: false }; }
+		};
+		service._hostsRetryMs = 0;
+		assert.equal(await service._hostFromConfig('cid', host(), 'key', null), null);
+		succeed = true;
+		const result = await service._hostFromConfig('cid', host(), 'key', null);
+		assert.equal(result.url, 'up:1');
+		assert.equal(lookups, 2);
+		assert.equal(service._hostsFailed.has('key'), false);
+	});
+
+	it('shares one discovery between concurrent calls for the same key', async () => {
+		let lookups = 0;
+		let release;
+		const gate = new Promise((resolve) => { release = resolve; });
+		inject(service, '_config', { getBackend: () => ({ baseUrl: 'http://backend:1', discoverable: { name: 'svc' } }) });
+		service._serviceDiscoveryResources = {
+			getService: async () => { lookups++; await gate; return { success: true, results: { address: 'discovered', grpc: { port: 9000 } } }; }
+		};
+		const pending = Promise.all([ service._hostFromConfig('a', host(), 'key', null), service._hostFromConfig('b', host(), 'key', null) ]);
+		release();
+		const [ first, second ] = await pending;
+		assert.equal(lookups, 1);
+		assert.equal(second, first);
+		assert.equal(service._hostsPending.size, 0);
+	});
+
+	// The single mutex serialized every key behind whichever was in flight.
+	it('does not hold one key\'s discovery behind another\'s', async () => {
+		let release;
+		const gate = new Promise((resolve) => { release = resolve; });
+		inject(service, '_config', { getBackend: (correlationId, key) => ({ baseUrl: 'http://backend:1', discoverable: { name: key } }) });
+		service._serviceDiscoveryResources = {
+			getService: async (correlationId, name) => {
+				if (name === 'slow')
+					await gate;
+				return { success: true, results: { address: name, grpc: { port: 1 } } };
+			}
+		};
+		const slow = service._hostFromConfig('cid', host(), 'slow', null);
+		const fast = await service._hostFromConfig('cid', host(), 'fast', null);
+		assert.equal(fast.url, 'fast:1', 'resolved while the slow one is still in flight');
+		release();
+		assert.equal((await slow).url, 'slow:1');
 	});
 
 	it('rejects a config without a base url', async () => {

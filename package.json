@@ -1,11 +1,11 @@
 {
   "name": "@thzero/library_server_service_grpc",
   "type": "module",
-  "version": "0.19.3",
+  "version": "0.19.4",
   "version_major": 0,
   "version_minor": 19,
-  "version_patch": 3,
-  "version_date": "10/02/2026",
+  "version_patch": 4,
+  "version_date": "10/03/2026",
   "description": "",
   "author": "thZero",
   "author_url": "https://www.thzero.com",
@@ -29,7 +29,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.14.4"
+    "@grpc/grpc-js": "^1.14.5"
   },
   "peerDependencies": {
     "@thzero/library_common": "^0.19",
@@ -37,6 +37,6 @@
     "@thzero/library_server": "^0.19"
   },
   "devDependencies": {
-    "eslint": "^9.39.5"
+    "eslint": "^10.12.0"
   }
 }
